@@ -4,7 +4,7 @@
 
 Built for **#BuildHybridAI 2026** with **Firebase AI Logic hybrid inference** (Web / Chrome, Gemini Nano + Gemini).
 
-> 🔗 Live demo: `https://YOUR_PROJECT.web.app` · 🎬 Video: `YOUTUBE_LINK`
+> 🔗 Live demo: https://paperwise-e1219.web.app · 💻 Code: https://github.com/varunreddy033/paperwise · 🎬 Video: coming soon
 
 ## Why hybrid matters here
 
