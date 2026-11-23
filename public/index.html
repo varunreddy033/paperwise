@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paperwise: understand any document, keep your identity</title>
+  <meta name="description" content="Paperwise explains bills, notices, lab reports and contracts in your language. Your personal details are found and hidden on-device with Gemini Nano before anything reaches the cloud." />
+  <meta name="theme-color" content="#f6f1e7" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="34" height="34" />
+      <div>
+        <div class="brand-name">Paperwise</div>
+        <div class="brand-tag">Understand any document. Keep your identity.</div>
+      </div>
+    </div>
+    <div class="status">
+      <button id="devicePill" class="pill" title="Gemini Nano status">On-device AI: checking…</button>
+      <span id="netPill" class="pill">Cloud: …</span>
+      <label class="switch" title="When on, nothing is sent to the cloud. Gemini Nano does everything.">
+        <input type="checkbox" id="deviceOnly" />
+        <span class="slider"></span>
+        <span class="switch-label">Never leave this device</span>
+      </label>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="flow">
+      <!-- STEP 1: input -->
+      <article class="card" id="inputCard">
+        <h1 class="hero">Got a confusing bill, notice, report or contract?</h1>
+        <p class="lede">Paperwise explains it in plain language and tells you exactly what to do. Your name, Aadhaar, phone and account numbers are hidden <b>on your device</b> before anything goes to the cloud. The cloud never learns who you are.</p>
+
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="photo" role="tab">📷 Photo / image</button>
+          <button class="tab" data-tab="text" role="tab">📝 Paste text</button>
+        </div>
+
+        <div class="tabpane" data-pane="photo">
+          <label class="drop" id="drop">
+            <input type="file" id="fileInput" accept="image/png,image/jpeg" capture="environment" hidden />
+            <img id="preview" alt="" hidden />
+            <span id="dropText">Tap to take a photo or drop an image (PNG / JPEG)<br /><small>Read by Gemini Nano on this device. The image is never uploaded.</small></span>
+          </label>
+        </div>
+        <div class="tabpane" data-pane="text" hidden>
+          <textarea id="docText" rows="9" placeholder="Paste the text of a letter, SMS, bill, report or agreement…"></textarea>
+        </div>
+
+        <div class="samples">
+          <span>Or try a sample:</span>
+          <div id="sampleList" class="sample-list"></div>
+        </div>
+
+        <div class="row">
+          <label class="lang">Explain in
+            <select id="language">
+              <option>English</option><option>Telugu</option><option>Hindi</option><option>Tamil</option>
+              <option>Kannada</option><option>Malayalam</option><option>Marathi</option><option>Bengali</option>
+              <option>Spanish</option>
+            </select>
+          </label>
+          <button id="decodeBtn" class="primary">🔒 Shield my details</button>
+        </div>
+      </article>
+
+      <!-- STEP 2: shield review -->
+      <article class="card" id="shieldCard" hidden>
+        <div class="card-head">
+          <h2>① Your details, shielded on this device</h2>
+          <span id="shieldMeta" class="muted"></span>
+        </div>
+        <p class="muted">Highlighted items will be replaced with placeholders. Tap a chip to keep it visible, or add anything else you want hidden.</p>
+        <div id="chips" class="chips"></div>
+        <form id="addForm" class="add">
+          <input id="addInput" placeholder="Hide something else (e.g. your street name)" />
+          <button type="submit" class="ghost">+ Hide</button>
+        </form>
+        <div class="compare">
+          <div>
+            <div class="compare-title">📄 Your document <span class="tag local">stays on device</span></div>
+            <pre id="originalView" class="doc"></pre>
+          </div>
+          <div>
+            <div class="compare-title">☁️ What the cloud will see <span class="tag cloud" id="cloudSeesTag">sent</span></div>
+            <pre id="redactedView" class="doc"></pre>
+          </div>
+        </div>
+        <div class="row end">
+          <button id="backBtn" class="ghost">← Change document</button>
+          <button id="explainBtn" class="primary">Explain it →</button>
+        </div>
+      </article>
+
+      <!-- STEP 3: result -->
+      <article class="card" id="resultCard" hidden>
+        <div class="card-head">
+          <h2 id="docType">…</h2>
+          <span id="urgency" class="urgency"></span>
+        </div>
+        <div class="viewtoggle">
+          <button class="seg active" data-view="you">👤 Your view</button>
+          <button class="seg" data-view="cloud">☁️ What the cloud saw</button>
+          <button id="speakBtn" class="ghost small" title="Read the summary aloud (on-device speech)">🔊 Listen</button>
+        </div>
+        <p id="summary" class="summary"></p>
+        <p id="urgencyReason" class="muted"></p>
+
+        <div class="grid2">
+          <section>
+            <h3>✅ What to do</h3>
+            <ol id="actions" class="actions"></ol>
+          </section>
+          <section>
+            <h3>🔢 Key facts</h3>
+            <dl id="facts" class="facts"></dl>
+          </section>
+        </div>
+        <section id="flagsWrap">
+          <h3>🚩 Watch out</h3>
+          <ul id="flags" class="flags"></ul>
+        </section>
+        <section>
+          <h3>❓ Questions worth asking</h3>
+          <ul id="questions" class="questions"></ul>
+        </section>
+        <section id="replyWrap">
+          <div class="card-head"><h3>✉️ Ready-to-send reply</h3><button id="copyReply" class="ghost small">Copy</button></div>
+          <p id="reply" class="reply"></p>
+        </section>
+
+        <section class="ask">
+          <h3>💬 Ask anything about this document</h3>
+          <div id="qa"></div>
+          <form id="askForm" class="add">
+            <input id="askInput" placeholder="e.g. Is it safe to pay on the app? What if I can't pay in full?" />
+            <button type="submit" class="primary">Ask</button>
+          </form>
+        </section>
+        <div class="row end"><button id="newBtn" class="ghost">+ New document</button></div>
+      </article>
+    </section>
+
+    <!-- Privacy ledger -->
+    <aside class="ledger card">
+      <h2>Privacy ledger</h2>
+      <p class="muted small">Every AI step, where it ran, and what left your device.</p>
+      <div class="stats">
+        <div><b id="statShielded">0</b><span>details shielded</span></div>
+        <div><b id="statRaw" class="good">0 B</b><span>personal data sent to cloud</span></div>
+        <div><b id="statSent">0 B</b><span>redacted text sent</span></div>
+        <div><b id="statSplit">0 / 0</b><span>on-device / cloud calls</span></div>
+      </div>
+      <ol class="pipeline" id="pipeline">
+        <li data-step="read"><span class="dot"></span><div><b>Read</b><small>Gemini Nano · on-device</small></div><em></em></li>
+        <li data-step="shield"><span class="dot"></span><div><b>Shield</b><small>Nano + rules · on-device</small></div><em></em></li>
+        <li data-step="explain"><span class="dot"></span><div><b>Explain</b><small>Gemini · cloud, Nano fallback</small></div><em></em></li>
+        <li data-step="restore"><span class="dot"></span><div><b>Restore</b><small>on-device</small></div><em></em></li>
+      </ol>
+      <h3 class="small">Activity</h3>
+      <ul id="log" class="log"></ul>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <footer class="foot">Built with Firebase AI Logic hybrid inference · Gemini Nano on-device + Gemini in the cloud · App Check · Remote Config · <a href="https://github.com/" id="repoLink">Source</a></footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
