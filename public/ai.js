@@ -136,7 +136,7 @@ export async function createEngine(config) {
     let lastErr;
     for (const name of cloudChain) {
       try {
-        const r = await run(cloudModelFor(name, schema), prompt);
+        const r = await run(cloudModelFor(name, schema), prompt, config.cloudTimeoutMs || 20000);
         // Remember what worked: put this model first for the rest of the session.
         cloudChain.splice(cloudChain.indexOf(name), 1);
         cloudChain.unshift(name);
@@ -144,15 +144,18 @@ export async function createEngine(config) {
       } catch (e) {
         lastErr = e;
         console.warn(`Cloud model ${name} failed, trying next`, e.message);
-        if (!/\b(500|503|429|404)\b|high demand|overloaded|not found|unavailable|quota/i.test(e.message)) break;
+        if (!/\b(500|503|429|404)\b|high demand|overloaded|not found|unavailable|quota|timed out/i.test(e.message)) break;
       }
     }
     throw lastErr;
   }
 
-  async function run(model, request) {
+  async function run(model, request, timeoutMs = 0) {
     const t0 = performance.now();
-    const result = await model.generateContent(request);
+    const call = model.generateContent(request);
+    const result = timeoutMs
+      ? await Promise.race([call, new Promise((_, rej) => setTimeout(() => rej(new Error(`timed out after ${timeoutMs / 1000}s`)), timeoutMs))])
+      : await call;
     const ms = Math.round(performance.now() - t0);
     const response = result.response;
     return { text: response.text(), source: String(response.inferenceSource || 'UNKNOWN').toUpperCase(), ms };
@@ -253,8 +256,14 @@ export async function createEngine(config) {
         `Tokens like [PERSON_1] or [ACCOUNT_1] stand in for private details that were removed for privacy - keep them exactly as written and never guess their values. ` +
         `Answer the question directly in ${lang} (no greeting, no introduction), in at most 120 words, simply and concretely. If the document does not say, say so.\n\n` +
         `DOCUMENT (redacted):\n"""\n${redacted}\n"""\n\nEARLIER SUMMARY: ${guide?.summary || ''}\n\nQUESTION: ${question}`;
-      const r = await run(local ? models.askLocal : models.askHybrid, prompt);
-      return { ...r, sentBytes: local ? 0 : new TextEncoder().encode(prompt).length };
+      if (local) return { ...(await run(models.askLocal, prompt)), sentBytes: 0 };
+      try {
+        const r = await run(models.askHybrid, prompt, config.cloudTimeoutMs || 20000);
+        return { ...r, sentBytes: r.source === 'IN_CLOUD' ? new TextEncoder().encode(prompt).length : 0 };
+      } catch (e) {
+        console.warn('Cloud answer failed, answering on-device', e.message);
+        return { ...(await run(models.askLocal, prompt.replace(/in [A-Za-z]+ \(no greeting/, 'in English (no greeting'))), sentBytes: 0, fallbackReason: e.message };
+      }
     },
   };
 }

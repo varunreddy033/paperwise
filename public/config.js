@@ -21,5 +21,7 @@ export const CONFIG = {
   // Default cloud model; can be overridden live with the Remote Config parameter `cloud_model`.
   defaultCloudModel: 'gemini-3.5-flash-lite',
   // Tried in order if the default model is overloaded or unavailable.
+  // Max wait per cloud model before trying the next one (ms).
+  cloudTimeoutMs: 20000,
   fallbackCloudModels: ['gemini-3.5-flash', 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
 };
