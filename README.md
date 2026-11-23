@@ -33,6 +33,13 @@ Paperwise splits each task by **what the data is**, not just by whether a model 
 - **Remote Config**: `cloud_model` parameter to switch the cloud Gemini model without redeploying
 - **Firebase Hosting**
 
+## Security note: the API key in `config.js`
+`public/config.js` contains the Firebase **web** config, including a Google API key. This is [public by design](https://firebase.google.com/docs/projects/api-keys): every Firebase web app ships it to the browser, so it identifies the project rather than granting access. It is locked down in two ways:
+- The key is **restricted to the app's own domains** (`paperwise-e1219.web.app`, `paperwise-e1219.firebaseapp.com`, `localhost`).
+- **App Check is enforced** for Firebase AI Logic (reCAPTCHA Enterprise), so requests from anywhere except the real app are rejected.
+
+No private credentials (service accounts, App Check debug tokens) are committed.
+
 ## Run it locally
 
 Requirements: **Chrome Desktop 139+**.
