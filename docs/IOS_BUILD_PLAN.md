@@ -6,22 +6,33 @@ Deadline for the whole hackathon: Mon 30 Nov 2026, 2:00 PM PT. Keep scope tight;
 
 ## Where it lives
 - In the existing repo: `paperwise/ios/` (one repo, two platforms; judges see both).
-- Firebase project: `paperwise-e1219` (same one as the web app). Register an iOS app with bundle ID
-  `com.varunreddy.paperwise` and put `GoogleService-Info.plist` in `ios/Paperwise/`.
+- Firebase project: `paperwise-e1219` (same one as the web app). The iOS app "Paperwise iOS" is registered with
+  bundle ID `com.varunreddy.paperwise`; put its `GoogleService-Info.plist` in `ios/Paperwise/`.
 - `GoogleService-Info.plist` must NOT be committed: add it to .gitignore and ship a `GoogleService-Info.example.plist`
   with placeholder values plus README instructions.
 
 ## Requirements (from Firebase docs, hybrid on Apple platforms)
 - Firebase iOS SDK via **Swift Package Manager only** (hybrid is SPM-only), products `FirebaseAILogic` and `FirebaseAppCheck`,
-  SDK >= 12.13.0 (use the latest release).
+  **pinned to exactly 12.19.3**. Do not upgrade: 13.0.0 removed `HybridModel`, `SystemLanguageModel` and
+  `generativeModelSession` (13.x replaces them with `ai.geminiLanguageModel(name:)` on Apple's own
+  `LanguageModelSession`, iOS 27+, no built-in fallback).
 - Apple Intelligence enabled on the device or on the Mac running the simulator. The app cannot trigger the model download.
 - On-device (Apple Foundation Models) is **text only**, max ~4096 tokens per request, foreground only.
 - Hybrid API: `HybridModel(primary:secondary:)`, `FirebaseAI.SystemLanguageModel.default` for on-device,
   `ai.geminiModel(name:)` for cloud, `firebaseAI.generativeModelSession(model:)`, `session.respond(to:)`.
-  A session keeps chat history, so create a NEW session per request. The SDK reports which model answered; find
-  the exact property in the SDK source (do not guess) and surface it as ON_DEVICE / IN_CLOUD.
+  A session keeps chat history, so create a NEW session per request.
+  - Which model answered: `response.rawResponse.modelVersion` (`GenerateContentResponse.modelVersion`). It is
+    `"apple-foundation-models-system-language-model"` when Foundation Models answered (ON_DEVICE); anything else is
+    the Gemini version, e.g. `gemini-3.5-flash-lite` (IN_CLOUD). There is no source enum, so compare against that string.
+  - `HybridModel` always takes two models. "System model only" = `HybridModel(primary: system, secondary: system)`.
+- Toolchain: Xcode 27.2, iOS 27.2 simulator runtime. Select Xcode once with
+  `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` (until then, prefix commands with
+  `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`). Project is generated with XcodeGen (`project.yml`).
+- Spike result (26 Nov, iPhone 18 Pro simulator): on-device `READY` in 2.7 s, cloud `READY` in 5.9 s, both with
+  the correct source.
 - App Check: `AppCheckDebugProviderFactory` in DEBUG builds (register the token printed in the Xcode console);
-  `AppAttestProvider` for non-debug builds.
+  `AppAttestProvider` for non-debug builds. Without a registered token, cloud calls fail with 401 "Firebase App Check
+  token is invalid". The debug token is per app install, so a fresh simulator or reinstall prints a new one.
 
 ## Pipeline (mirror the web app: public/ai.js and public/privacy.js are the reference)
 1. **Read (on-device):** photo from camera or Photos picker -> Apple **Vision** `VNRecognizeTextRequest` (accurate mode,
